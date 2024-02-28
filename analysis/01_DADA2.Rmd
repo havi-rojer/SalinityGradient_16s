@@ -191,6 +191,11 @@ dada_reverse <- dada(filtered_reverse_reads, err = error_forward_Reads) # multit
 merged_ASVs <- mergePairs(dada_forward, filtered_forward_reads,
                           dada_reverse, filtered_reverse_reads, 
                           verbose = TRUE)
+
+# Evaluate the output
+typeof(merged_ASVs)
+length(merged_ASVs)
+names(merged_ASVs)
 ```
 
 # Session Information
