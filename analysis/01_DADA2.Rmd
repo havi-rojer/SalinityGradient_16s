@@ -33,6 +33,15 @@ library(devtools)
 
 #devtools::install_github("benjjneb/dada2")
 library(dada2)
+
+#install.packages("tidyverse")
+library(tidyverse)
+
+#install.packages("patchwork)
+library(patchwork)
+
+#install.packages("dplyr")
+library(dplyr)
 ```
 
 ```{r load-data}
@@ -59,15 +68,17 @@ reverse_reads <- list.files(raw_fastqs_path, pattern = "R2_001.fastq.gz", full.n
 head(reverse_reads)
 ```
 
-# Quality Plots
+# Raw Quality Plots
 ```{r raw-quality-plot}
 # Randomly select 2 samples from dataset to evaluate
 random_samples <- sample(1:length(reverse_reads), size = 2)
 random_samples
 
 # Calculate and plot quality of these two samples
-plotQualityProfile(forward_reads[random_samples])
-plotQualityProfile(reverse_reads[random_samples])
+plotQualityProfile(forward_reads[random_samples]) + 
+  labs(title = "Forward Read Raw Quality")
+plotQualityProfile(reverse_reads[random_samples]) + 
+  labs(title = "Reverse Read Raw Quality")
 ```
 
 # Prepare a placeholder for filtered reads
@@ -105,6 +116,68 @@ Parameters of filter and trim **DEPENDS ON THE DATASET**
 # trim out poor bases, first 3 bases on F reads
 # write out filtered fastq files
 filtered_reads <- filterAndTrim(fwd = forward_reads, filt = filtered_forward_reads, rev = reverse_reads, filt.rev = filtered_reverse_reads, maxN = 0, maxEE = (c(2,2)), trimLeft = 3, truncQ = 2, rm.phix = TRUE, compress = TRUE) # multithread = TRUE
+```
+
+# Plot the quality of the trimmed reads
+
+```{r filterTrim-quality-plot}
+# Calculate and plot quality of these two samples
+plotQualityProfile(filtered_forward_reads[random_samples]) + 
+  labs(title = "Trimmed Forward Read Quality")
+plotQualityProfile(filtered_reverse_reads[random_samples]) + 
+  labs(title = "Trimmed Reverse Read Quality")
+```
+
+# Aggregated Trimmed Plots
+```{r aggregate-trimmed-plots}
+# Aggregate all QC plots
+# Install and library patchwork
+# plotQualityProfile(filtered_forward_reads, aggregate = TRUE)
+# plotQualityProfile(filtered_reverse_reads, aggregate = TRUE)
+```
+
+## Stats on read outputs from `filterAndTrim`
+```{r filterTrim-stats}
+# Make output into dataframe
+filtered_df <- as.data.frame(filtered_reads)
+head(filtered_df)
+
+# calculate some stats
+filtered_df %>%
+  reframe(median_reads_in = median(reads.in),
+          median_reads_out = median(reads.out),
+          median_percent_retained = 100*median(reads.out)/median(reads.in))
+```
+
+# Error Modeling
+
+**NOTE:** Run seperately one each illumina dataset.
+```{r learn-errors}
+# Forward reads
+error_forward_Reads <- learnErrors(filtered_forward_reads) # multithread = TRUE
+# Plot forward
+plotErrors(error_forward_Reads, nominalQ = TRUE) +
+  labs(title = "Forward Read Error Model")
+
+# Reverse reads
+error_reverse_Reads <- learnErrors(filtered_reverse_reads) # multithread = TRUE
+# Plot reverse
+plotErrors(error_reverse_Reads, nominalQ = TRUE) +
+  labs(title = "Reverse Read Error Model")
+
+
+```
+
+# Infer ASVs
+
+Note that this is happening seperately on the forward and reverse reads. This is unique to DADA2.
+
+```{r infer-ASVs}
+# Infer forward ASVs
+dada_forward <- dada(filtered_forward_reads, err = error_forward_Reads) # multithread = TRUE
+
+# Infer reverse ASVs
+dada_reverse <- dada(filtered_reverse_reads, err = error_forward_Reads) # multithread = TRUE
 ```
 
 # Session Information
