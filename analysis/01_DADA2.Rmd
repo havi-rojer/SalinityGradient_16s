@@ -30,6 +30,16 @@ set.seed(3141596)
 2. Filter and trim out bad sequences and bases from our sequencing files.
 3. Write out fastq files with high quality sequences.
 4. Evaluate the quality from our filter and trim.
+5. Infer errors on forward and reverse reads individually.
+6. Identified ASVs on forward and reverse reads seperately using the error model.
+7. Merge forward and reverse ASVs into "contiguous ASVs".
+8. Generate the ASV count table (`otu_table` input for phyloseq).
+
+Output that we need:
+
+1. ASV Count Table: `otu_table`
+2. Taxonomy Table: `tax_table`
+3. Sample Information: `sample_data` - track the reads lost throughout the DADA2 workflow
 
 # Load Libraries
 ```{r load-libraries}
@@ -196,6 +206,12 @@ merged_ASVs <- mergePairs(dada_forward, filtered_forward_reads,
 typeof(merged_ASVs)
 length(merged_ASVs)
 names(merged_ASVs)
+```
+
+# Generate ASV Count Table
+```{r generate-ASV-table}
+# Create the ASV count table
+raw_ASV_table <- makeSequenceTable(merged_ASVs)
 ```
 
 # Session Information
