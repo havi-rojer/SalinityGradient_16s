@@ -212,6 +212,9 @@ names(merged_ASVs)
 ```{r generate-ASV-table}
 # Create the ASV count table
 raw_ASV_table <- makeSequenceTable(merged_ASVs)
+
+# Write out the file to data/01_DADA2
+
 ```
 
 # Session Information
