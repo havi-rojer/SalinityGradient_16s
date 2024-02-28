@@ -1,6 +1,11 @@
 ---
 title: "01_DADA2"
 output: html_document
+  toc: yes
+  toc_float:
+    collapse: no
+    smooth_scroll: yes
+    toc_depth: 3
 date: "`r Sys.Date()`"
 editor_options: 
   chunk_output_type: console
@@ -178,6 +183,14 @@ dada_forward <- dada(filtered_forward_reads, err = error_forward_Reads) # multit
 
 # Infer reverse ASVs
 dada_reverse <- dada(filtered_reverse_reads, err = error_forward_Reads) # multithread = TRUE
+```
+
+# Merge forward and reverse ASVs
+```{r merge-ASVs}
+# merge forward and reverse ASVs
+merged_ASVs <- mergePairs(dada_forward, filtered_forward_reads,
+                          dada_reverse, filtered_reverse_reads, 
+                          verbose = TRUE)
 ```
 
 # Session Information
