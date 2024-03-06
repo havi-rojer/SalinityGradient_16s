@@ -2,6 +2,7 @@
 .Rhistory
 .RData
 .Ruserdata
+example/*
 *.fastq.gz
 */*.fastq.gz
 */*/*.fastq.gz
