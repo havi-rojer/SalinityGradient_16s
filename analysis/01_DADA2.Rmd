@@ -1,14 +1,13 @@
 ---
 title: "01_DADA2"
-output: html_document
-  toc: yes
-  toc_float:
-    collapse: no
-    smooth_scroll: yes
-    toc_depth: 3
+output: 
+  html_document:
+    toc: yes
+    toc_float:
+      collapse: no
+      smooth_scroll: yes
+      toc_depth: 3
 date: "`r Sys.Date()`"
-editor_options: 
-  chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
@@ -57,6 +56,9 @@ library(patchwork)
 
 #install.packages("dplyr")
 library(dplyr)
+
+#install.packages("patchwork")
+library(patchwork)
 ```
 
 ```{r load-data}
@@ -146,9 +148,8 @@ plotQualityProfile(filtered_reverse_reads[random_samples]) +
 # Aggregated Trimmed Plots
 ```{r aggregate-trimmed-plots}
 # Aggregate all QC plots
-# Install and library patchwork
-# plotQualityProfile(filtered_forward_reads, aggregate = TRUE)
-# plotQualityProfile(filtered_reverse_reads, aggregate = TRUE)
+plotQualityProfile(filtered_forward_reads, aggregate = TRUE)
+plotQualityProfile(filtered_reverse_reads, aggregate = TRUE)
 ```
 
 ## Stats on read outputs from `filterAndTrim`
@@ -215,6 +216,27 @@ raw_ASV_table <- makeSequenceTable(merged_ASVs)
 
 # Write out the file to data/01_DADA2
 
+# Check the type and dimesions of the data
+dim(raw_ASV_table)
+class(raw_ASV_table)
+typeof(raw_ASV_table)
+
+# Inspect the distribution of sequence lengths of all ASVs in dataset
+table(nchar(getSequences(raw_ASV_table)))
+
+# Inspect the distribution of sequence lengths of all ASVs in dataset
+# AFTER TRIM
+data.fram(Seq_Length = nchar(getSequences(raw_ASV_table))) %>%
+  ggplot(aes(aes(x = Seq_Length)) +
+           geom_histogram() +
+           lab(title = "Raw distribution of ASV length"))
+
+# TRIM THE ASVS
+# Let's trim the ASVs to only be the right size, which is 249.
+# 249 originates from our expected amplicon of 252. - 3p in the forward read due to low quality.
+
+# We will allow for a few
+raw_ASV_table_trimmed <- raw_ASV_table[,nchar(colnames(raw_ASV_table))]
 ```
 
 # Session Information
