@@ -1,0 +1,55 @@
+---
+title: "Phyloseq PreProcessing"
+output: html_document
+date: "`r Sys.Date()`"
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, fig.align = "center", fig.path = "../figures/02_PreProcessing/") # Send any figures to this folder
+```
+
+# Load libraries
+```{r load-libraries}
+library(devtools)
+#devtools::install_github("joey711/phyloseq")
+library(phyloseq)
+```
+
+# Goals
+
+Here, we will process the data into a phyloseq object.
+
+- ASV table
+- Taxonomy table
+- Track reads (metadata)
+
+Then, we will remove the following:
+
+1. Remove Chloroplasts
+2. Remove Mitochondria
+3. Remove samples without enough reads
+
+Finally, we will write a data file of phyloseq output
+
+# Load data
+
+## ASV Table
+```{r load-ASV-table}
+# First, load ASV table
+load()
+```
+
+## Taxonomy Table
+```{r load-tax-table}
+
+```
+
+## Track Reads Data
+```{r load-track-reads}
+
+```
+
+# Handoff
+```{r phyloseq-handoff}
+
+```
