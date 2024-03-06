@@ -2,6 +2,8 @@
 title: "Phyloseq PreProcessing"
 output: html_document
 date: "`r Sys.Date()`"
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r setup, include = FALSE}
@@ -13,6 +15,7 @@ knitr::opts_chunk$set(echo = TRUE, fig.align = "center", fig.path = "../figures/
 library(devtools)
 #devtools::install_github("joey711/phyloseq")
 library(phyloseq)
+library(tidyverse)
 ```
 
 # Goals
@@ -36,12 +39,34 @@ Finally, we will write a data file of phyloseq output
 ## ASV Table
 ```{r load-ASV-table}
 # First, load ASV table
-load()
+setwd("/workdir/zlr6/gitrepos/SalinityGradient_16s")
+load("data/01_DADA2/ASV_counts.RData")
+
+# Inspect ASV table
+head(asv_tab)[,1:5]
+
+# Fix names
+colnames(asv_tab)
+sample_names <- colnames(asv_tab)
+samples_fixed <- sapply(strsplit(basename(sample_names), "_"), `[`,1)
+head(samples_fixed)
+
+# re-write the ASV count file to fix names
+colnames(asv_tab) <- samples_fixed
 ```
 
 ## Taxonomy Table
 ```{r load-tax-table}
+tax_df <- read.table("data/01_DADA2/ASV_taxonomy.tsv", sep = "\t")
 
+# fix column names
+tax_df = tax_df[-1,]
+colnames(tax_df) <- c("ASV", "Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species", "ASV", "ASVseq")
+
+# Taxonomy Table Matrix
+tax_df %>%
+  tibble::column_to_rownames(., var = "asv_names") %>%
+  as.matrix()
 ```
 
 ## Track Reads Data
