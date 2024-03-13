@@ -7,6 +7,7 @@ output:
       collapse: no
       smooth_scroll: yes
       toc_depth: 3
+    theme: "default"
 date: "`r Sys.Date()`"
 ---
 
@@ -56,9 +57,6 @@ library(patchwork)
 
 #install.packages("dplyr")
 library(dplyr)
-
-#install.packages("patchwork")
-library(patchwork)
 ```
 
 ```{r load-data}
@@ -81,6 +79,7 @@ head(forward_reads)
  
 # Create vector of reverse reads
 reverse_reads <- list.files(raw_fastqs_path, pattern = "R2_001.fastq.gz", full.names = TRUE)
+
 # Intuition check
 head(reverse_reads)
 ```

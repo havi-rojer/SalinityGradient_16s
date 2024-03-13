@@ -39,8 +39,8 @@ Finally, we will write a data file of phyloseq output
 ## ASV Table
 ```{r load-ASV-table}
 # First, load ASV table
-setwd("/workdir/zlr6/gitrepos/SalinityGradient_16s")
-load("data/01_DADA2/ASV_counts.RData")
+#setwd("/workdir/zlr6/gitrepos/SalinityGradient_16s")
+load("/local/workdir/zlr6/git_repos/SalinityGradient_16s/data/01_DADA2/ASV_counts.RData")
 
 # Inspect ASV table
 head(asv_tab)[,1:5]
@@ -57,24 +57,67 @@ colnames(asv_tab) <- samples_fixed
 
 ## Taxonomy Table
 ```{r load-tax-table}
-tax_df <- read.table("data/01_DADA2/ASV_taxonomy.tsv", sep = "\t")
+tax_df <- read.table("/local/workdir/zlr6/git_repos/SalinityGradient_16s/data/01_DADA2/ASV_taxonomy.tsv", sep = "\t", skip = 1, header = FALSE)
 
 # fix column names
-tax_df = tax_df[-1,]
-colnames(tax_df) <- c("ASV", "Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species", "ASV", "ASVseq")
+colnames(tax_df) <- c("asv_names", "Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species", "ASV", "ASVseq")
 
 # Taxonomy Table Matrix
-tax_df %>%
+tax_mat <- tax_df %>%
   tibble::column_to_rownames(., var = "asv_names") %>%
   as.matrix()
 ```
 
 ## Track Reads Data
 ```{r load-track-reads}
+load("data/01_DADA2/track_read_counts.RData")
+# Take a look at the data
+head(track_counts_df)
+dim(track_counts_df)
 
+# Load in metadata
+metadata_df <- read.csv("data/metadata.csv")
+dim(metadata_df)
+colnames(metadata_df)
+
+# Merge metadata_df with track_reads_df
+head(metadata_df)
+head(track_counts_df)
+
+metadata_track_reads_df <- metadata_df %>%
+  left_join(., track_counts_df, by = "names") %>% dplyr::select(-X)
+
+# Intuition check
+head(metadata_track_reads_df)
+
+# Update row.names to be sample names
+# Before
+row.names(metadata_track_reads_df)
+
+# Rewrite
+row.names(metadata_track_reads_df) <- metadata_track_reads_df$names
+
+# Check afterwards that it worked
+row.names(metadata_track_reads_df)
+
+# Intuition check
+head(metadata_track_reads_df)
 ```
 
 # Handoff
 ```{r phyloseq-handoff}
+# Double-check it's all good
+dim(asv_tab)
+dim(tax_mat)
 
+# Intuition check
+stopifnot(row.names(asv_tab) == row.names(tax_mat))
+
+# Construct the phyloseq object
+raw_physeq <- phyloseq(otu_table(asv_tab, taxa_are_rows = TRUE), sample_data(metadata_track_reads_df), tax_table(tax_mat))
+
+raw_physeq
+
+# Save this raw phyloseq object
+save(raw_physeq, file = "/local/workdir/zlr6/git_repos/SalinityGradient_16s/data/02_PreProcessing/raw_physeq")
 ```
