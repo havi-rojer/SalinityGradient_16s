@@ -70,7 +70,7 @@ tax_mat <- tax_df %>%
 
 ## Track Reads Data
 ```{r load-track-reads}
-load("data/01_DADA2/track_read_counts.RData")
+load("/local/workdir/zlr6/git_repos/SalinityGradient_16s/data/01_DADA2/track_read_counts.RData")
 # Take a look at the data
 head(track_counts_df)
 dim(track_counts_df)
@@ -130,8 +130,6 @@ Remove:
 2. Mitochondria
 
 ```{r rm-mitos-chloros}
-# Remind myself of the tax table
-view(tax_mat)
 
 # Make new physeq without mitochondria or chloroplasts
 noChloros_physeq <- raw_physeq %>% 
@@ -212,8 +210,7 @@ control_ASV_physeq %>%
 # Check tax of ASV_3
 control_ASV_physeq %>%
   tax_table() %>%
-  data.frame() %>%
-  View()
+  data.frame()
 
 # Would only like to keep ASV_18 and ASV_56, everything else is trash
 controlASVs_toREMOVE <- dplyr::setdiff(control_ASVs$ASV, c("ASV_18", "ASV_56"))
@@ -294,7 +291,7 @@ names(mock_ref)
 
 # Curious: What are the mock counts in the actual samples
 
-`````````
+```
 
 # Remove mock ASVs
 ```{r rm-mock-asvs}

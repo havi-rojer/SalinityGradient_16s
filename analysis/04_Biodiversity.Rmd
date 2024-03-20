@@ -1,0 +1,97 @@
+---
+title: "04_Biodiversity"
+output: 
+  html_document:
+    toc: yes
+    toc_float:
+      collapse: no
+      smooth_scroll: yes
+      toc_depth: 3
+    theme: "default"
+date: "`r Sys.Date()`"
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, fig.align = "center", fig.path = "../figures/04_Biodiversity/") # Send any figures to this folder
+```
+
+# Setting the Environment
+
+## Set the seed
+```{r set-seed}
+set.seed(31415)
+```
+
+## Load Libraries
+```{r load-packages}
+#install.packages("iNEXT")
+pacman::p_load(devtools, phyloseq, patchwork, iNEXT, tidyverse, install = FALSE)
+```
+
+## Load in Data
+```{r load-data}
+load("/workdir/zlr6/git_repos/SalinityGradient_16s/data/02_PreProcessing/raw_preprocessed_physeq.RData")
+raw_preprocessed_physeq
+
+# Intuition check
+min(sample_sums(raw_preprocessed_physeq))
+```
+
+# Goals
+
+1. Calculate the Hill Diversity of the samples.
+2. Evaluate the rarefaction curves.
+3. Evaluate the diversity values.
+4. Make notes of specific samples and their seq depth.
+
+# Diversity Calculations wirth iNEXT
+```{r calc-div}
+# prepare input data
+iNEXT_input_df <- raw_preprocessed_physeq %>%
+  otu_table() %>%
+  data.frame()
+
+# Quick check
+dim(iNEXT_input_df)
+
+# Run iNEXT: Calculate the Hill numbers
+# Note that species in ROWS, samples in COLUMNS
+# Remember to set the seed!
+iNEXT_data <- iNEXT(iNEXT_input_df, 
+                    q = c(0, 1, 2), datatype = "abundance")
+
+# save the file
+save(iNEXT_data, file = "/workdir/zlr6/git_repos/SalinityGradient_16s/data/04_Biodiversity/iNEXT_data.RData")
+```
+
+# Evaluate the diversity!
+```{r load-div}
+load("/workdir/zlr6/git_repos/SalinityGradient_16s/data/04_Biodiversity/iNEXT_data.RData")
+str(iNEXT_data)
+```
+
+```{r plot-rarefaction}
+# setting colors for stations
+station_colors <- c(
+  "Shipping Channel" = "dodgerblue4",
+  "Aransas Bay" = "dodgerblue2",
+  "Copano West" = "#D9CC3C",
+  "Copano East" = "#A0E0BA",
+  "Mesquite Bay" = "#00ADA7")
+
+# Prepare colors
+color_df <-
+  iNEXT_input_df %>%
+  colnames() %>%
+  data.frame()
+#check
+head(color_df)
+# rename the column
+colnames(color_df)[1] <- "names"
+#check
+head(color_df)
+
+# END HERE
+```
