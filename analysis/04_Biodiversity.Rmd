@@ -59,17 +59,18 @@ dim(iNEXT_input_df)
 # Run iNEXT: Calculate the Hill numbers
 # Note that species in ROWS, samples in COLUMNS
 # Remember to set the seed!
-iNEXT_data <- iNEXT(iNEXT_input_df, 
-                    q = c(0, 1, 2), datatype = "abundance")
+#iNEXT_data <- iNEXT(iNEXT_input_df, 
+                   # q = c(0, 1, 2), datatype = "abundance")
 
 # save the file
-save(iNEXT_data, file = "/workdir/zlr6/git_repos/SalinityGradient_16s/data/04_Biodiversity/iNEXT_data.RData")
+#save(iNEXT_data, file = "/workdir/zlr6/git_repos/SalinityGradient_16s/data/04_Biodiversity/iNEXT_data.RData")
 ```
 
 # Evaluate the diversity!
 ```{r load-div}
 load("/workdir/zlr6/git_repos/SalinityGradient_16s/data/04_Biodiversity/iNEXT_data.RData")
 str(iNEXT_data)
+metadata_df <- read.csv("/workdir/zlr6/git_repos/SalinityGradient_16s/data/metadata.csv")
 ```
 
 ```{r plot-rarefaction}
@@ -93,5 +94,102 @@ colnames(color_df)[1] <- "names"
 #check
 head(color_df)
 
-# END HERE
+# Make a helper dataframe for plotting with colors 
+iNEXT_color_df <- 
+  color_df %>%
+  # Fix the names for merging
+  mutate(names = gsub(names, pattern = "[.]", replace = "-"),
+         names = gsub(names, pattern = "X",  replace = "")) %>%
+  # Merge with metadata
+  left_join(metadata_df, by = "names") %>%
+  # Merge with colors for plotting with ggiNEXT
+  left_join(data.frame(station_colors = station_colors,
+            station = names(station_colors)),
+            by = "station")
+```
+
+# Plot Rarefaction with `ggiNEXT`
+
+```{r ggiNEXT, fig.width=8, fig.height=3.5}
+# Plot rarefaction! 
+# rarefaction/extrapolation curve, type = 1 
+
+# Order q: 
+  # 0 = Richness/ Number of Total taxa
+  # 1 = Exponential Shannon / Number of "Common" taxa
+  # 2 = Inverse Simpson / Number of "Dominant" taxa 
+
+ggiNEXT(iNEXT_data, type = 1, facet.var = "Order.q") + 
+  facet_wrap(~Order.q, scales = "fixed") + 
+  scale_color_manual(values = iNEXT_color_df$station_colors, guide = FALSE) + 
+  scale_fill_manual(values = iNEXT_color_df$station_colors, guide = FALSE) + 
+  scale_shape_manual(values = base::rep(17, nsamples(raw_preprocessed_physeq)),
+                     guide = FALSE) + 
+  theme(legend.position = "none")
+```
+
+# Manually plot diversity
+
+## Rarefaction
+
+```{r iNEXT-manual}
+iNEXT_manual_df <- iNEXT_data$iNextEst$size_based %>%
+  dplyr::rename(names = Assemblage) %>%
+  # fix the sample names
+  mutate(names = gsub(names, pattern = "[.]", replace = "-"),
+         names = gsub(names, pattern = "X", replace = "")) %>%
+  # join with metadata
+  left_join(., metadata_df, by = "names") %>%
+  # add colors to data frame
+  left_join(., data.frame(station_colors = station_colors,
+                          station = names(station_colors)),
+            by = "station")
+
+# plot it! - rarefaction curve
+iNEXT_manual_df %>%
+  # filter out rows that are calculated by rarefaction from iNEXT
+  dplyr::filter(Method == "Extrapolation") %>%
+  # make the actual plot
+  ggplot(aes(x = m, y = qD, color = station, group = names)) +
+  geom_line(alpha = 0.5) +
+  facet_grid(Order.q~station, scales = "fixed") +
+  scale_color_manual(values = station_colors) +
+  theme(legend.position = "bottom")
+```
+
+
+# Environmental variable check
+
+```{r environmental-pairs, fig.width=8, fig.height=8}
+head(metadata_df)
+# Pull out environmental variables
+env_df <-
+    metadata_df %>%
+    dplyr::select(names, water_tempC:DO_mgL)
+# inspect
+head(env_df)
+
+# plot the correlation
+pairs(dplyr::select(env_df, -names), upper.panel = NULL)
+```
+
+# Diveristy vs salinity
+
+```{r div-vs-salinity, fig.height=6, fig.width=6}
+iNEXT_manual_df %>%
+  dplyr::filter(Method == "Observed") %>%
+  ggplot(aes(x = salinity_psu, y = qD)) +
+  facet_wrap(.~Order.q, scales = "free") +
+  stat_smooth(method = "lm", formula = y ~poly(x, 2)) +
+  geom_point(aes(color = station)) +
+  scale_color_manual(values = station_colors) +
+  labs(x = "Salinity (PSU)", y = "# of ASVs") +
+  theme(legend.position = "bottom")
+```
+
+------------------------------------------------------
+
+# Session Information
+```{r session-info}
+devtools::session_info()
 ```

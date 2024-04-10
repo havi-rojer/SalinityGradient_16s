@@ -1,0 +1,62 @@
+---
+title: "Phylogenetic Tree Construction"
+output: 
+  html_document:
+    toc: yes
+    toc_float:
+      collapse: no
+      smooth_scroll: yes
+      toc_depth: 3
+    theme: "default"
+date: "`r Sys.Date()`"
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, fig.align = "center", fig.path = "../figures/03_Phylogenetic_Tree") # Send any figures to this folder
+```
+
+# Setting the Environment
+
+## Set the seed
+```{r set-seed}
+set.seed(31415)
+```
+
+# Goals of this file
+
+The goal is to create a phylogenetic tree!
+
+1. Load in preprocessed phyloseq object.
+2. Create an ASV fasta file from the phyloseq object.
+3. Align the 16S sequences from fasta file with MAFFT.
+4. Create a tree with FastTree2.
+
+## Load Libraries & Phyloseq object
+```{r load-packages}
+#install.packages("iNEXT")
+pacman::p_load(phytools, ggtree, RColorBrewer, install = FALSE)
+
+load("/workdir/zlr6/git_repos/SalinityGradient_16s/data/02_PreProcessing/raw_preprocessed_physeq.RData")
+```
+
+# Create fasta file of ASVs and their sequences
+
+This fasta file will be used to create our alignment in MAFFT
+
+```{r create-preprocessed-fasta}
+# pull out ASV seqs and ASV names
+asv_seq_df <- raw_preprocessed_physeq@tax_table %>%
+  data.frame() %>%
+  dplyr::select(ASV, ASVseq)
+
+# Add the > symbol to make the fasta header
+asv_seq_df$ASV <- paste0(">",asv_seq_df$ASV)
+
+# Create the fasta object
+asv_seq_fasta <- c(rbind(asv_seq_df$ASV, asv_seq_df$ASVseq))
+
+# Write to a fasta
+write(asv_seq_fasta, file = "/workdir/zlr6/git_repos/SalinityGradient_16s/data/03_Phylogenetic_Tree/preprocessed_ASVs.fasta")
+```
