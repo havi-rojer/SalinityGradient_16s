@@ -1,0 +1,192 @@
+---
+title: "Phyolgenetic Tree Inspection & Rooting"
+output: 
+  html_document:
+    toc: yes
+    toc_float:
+      collapse: no
+      smooth_scroll: yes
+      toc_depth: 3
+    theme: "default"
+date: "`r Sys.Date()`"
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, fig.align = "center", 
+                      # Always relative to the document directory
+                      fig.path = "../figures/03a_Phylogenetic_Tree") # Send any figures to this folder
+```
+
+# Setting the Environment
+
+## Set Seed
+
+```{r set-seed}
+set.seed(31415)
+```
+
+## Goals
+
+1. Load the fastree unrooted tree.
+2. Add tree to phyloseq object.
+3. Visualize and inspect tree with ggtree.
+4. Prune ASVs, if needed.
+5. Root our tree.
+6. Combine new tree with a phyloseq object.
+7. Save 2 phyloseq objects: 1. Unrooted tree phyloseq object, 2. Rooted tree phyloseq object.
+
+## Load Packages
+
+```{r load-libraries}
+pacman::p_load(devtools, ggtree, phyloseq, phytools, tidyverse, dada2, install = FALSE)
+```
+
+## Load Data Files
+```{r load-data}
+# Preprocessed phyloseq object
+load("data/02_PreProcessing/raw_preprocessed_physeq.RData")
+
+# Load in the tree!
+unrooted_tree <- read.tree("data/03_Phylogenetic_Tree/ASVs_unrooted.tree")
+str(unrooted_tree)
+```
+
+# Merge Phyloseq
+```{r merge-physeq}
+# Intuition check
+stopifnot(ntaxa(raw_preprocessed_physeq) == ntaxa(unrooted_tree))
+
+# Merge the tree with the phyloseq object
+unrooted_physeq <- merge_phyloseq(raw_preprocessed_physeq, unrooted_tree)
+unrooted_physeq
+```
+
+# Plot Tree with `ggtree`
+```{r plot-tree-unrooted}
+# make a basic tree
+kingdom_node_tree <- ggtree(unrooted_physeq) +
+  # color tips by kingdom
+  geom_tippoint(mapping = aes(color = Kingdom)) +
+  scale_color_manual(values = c("#990099", "#660099")) +
+  # add title
+  labs(title = "Unrooted Tree") +
+  # Add node label
+  geom_text(aes(label=node), hjust = 0.9, vjust = -0.3, size = 2) +
+  # Move the legend to the bottom
+  theme(legend.position = "bottom")
+
+kingdom_node_tree
+```
+
+# Evaluate Long Branch 
+
+This part gets a bit manual 
+
+You might have to move the labels to read it better
+
+```{r eval-long-branch}
+# View a specific clade 
+# Zoom in on origin tree: Node 2537
+viewClade(kingdom_node_tree + 
+          labs(title = "Unrooted Tree: Node 4980"), 
+          node = 4980)
+
+viewClade(kingdom_node_tree + 
+          labs(title = "Unrooted Tree: Node 2628") + 
+          geom_text(aes(label=ASV)), 
+          node = 2628)
+```
+
+ASV_456 = suspect. Let's explore this ASV more! 
+
+
+```{r check-taxonomy}
+# Let's make a note of the the taxonomy and the ASV Sequence.... 
+unrooted_physeq %>%
+  subset_taxa(., ASV == "ASV_456") %>%
+  tax_table() %>%
+  data.frame()
+
+# Let's also check the counts of the ASV 
+unrooted_physeq %>%
+  subset_taxa(., ASV == "ASV_456") %>%
+  otu_table() %>%
+  data.frame() %>%
+  colSums()
+```
+
+It's an Alphaproteobacteria that has very few counts. 
+
+Let's BLAST it on NSCBI Nucleotide Blast 
+
+It matches Protoeuglena noctilucae genome assembly, organelle: mitochondrion with an e-value of 2e-25	and a percent identity of 84.44%!! 
+
+This is definitely a contaminant that needs to be removed from the dataset. Let's go ahead and do that... 
+
+# Prune ASV_456
+```{r prune-ASV456}
+#Subset Tree
+# Function from Joey McMurdie: https://github.com/joey711/phyloseq/issues/652
+pop_taxa = function(physeq, badTaxa){
+  allTaxa <-  taxa_names(physeq)
+  allTaxa <- allTaxa[!(allTaxa %in% badTaxa)]
+  return(prune_taxa(allTaxa, physeq))}
+
+# Let's use the pop_taxa function
+# Recreate a phyloseq object without ASV_456
+unrooted_physeq_rm456 <- unrooted_physeq %>%
+  pop_taxa(., "ASV_456")
+
+# Intuition check
+ntaxa(unrooted_physeq) - ntaxa(unrooted_physeq_rm456)
+
+# Visually inspect
+ggtree(unrooted_physeq_rm456) +
+  geom_tippoint(mapping = aes(color = Kingdom))
+```
+
+# Midroot Tree
+
+```{r midroot-tree}
+# Is the tree rooted?
+new_unrooted_tree <- phy_tree(unrooted_physeq_rm456)
+is.rooted(phy_tree(unrooted_physeq_rm456))
+
+# Let's midpoint root the tree
+midpoint_rooted_tree <- midpoint.root(new_unrooted_tree)
+
+#Is the new tree rooted?
+is.rooted(phy_tree(midpoint_rooted_tree))
+
+# Assign to a new phyloseq object: merging subsetted phyloseq with the new rooted tree
+
+#1. Create the new phyloseq object without ASV_456
+physeq_rm456 <- raw_preprocessed_physeq %>%
+  subset_taxa(ASV != "ASV_456") 
+
+# Merge tree with the new physeq_rm456
+midroot_physeq_rm456 <-
+  merge_phyloseq(physeq_rm456, midpoint_rooted_tree)
+midroot_physeq_rm456
+
+# Quick inspection of tree
+ggtree(midroot_physeq_rm456) +
+  geom_tippoint(mapping = aes(color = Kingdom))
+```
+
+
+# Save to a new phyloseq object
+```{r save-physeq}
+save(list = c("unrooted_physeq_rm456", "midroot_physeq_rm456"), 
+     file = "data/03_Phylogenetic_Tree/phytree_preprocessed_physeq.RData")
+```
+
+
+------------------------------------------------------
+
+# Session Information
+```{r session-info}
+devtools::session_info()
+```

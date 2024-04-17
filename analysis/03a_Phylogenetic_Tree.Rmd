@@ -58,5 +58,62 @@ asv_seq_df$ASV <- paste0(">",asv_seq_df$ASV)
 asv_seq_fasta <- c(rbind(asv_seq_df$ASV, asv_seq_df$ASVseq))
 
 # Write to a fasta
-write(asv_seq_fasta, file = "/workdir/zlr6/git_repos/SalinityGradient_16s/data/03_Phylogenetic_Tree/preprocessed_ASVs.fasta")
+write(asv_seq_fasta, file = "data/03_Phylogenetic_Tree/preprocessed_ASVs.fasta")
+```
+
+# Align the 16S sequences from fasta file with MAFFT
+
+```{r run-mafft, engine = 'bash', engine.opts = '-l'}
+# Write bash code to run mafft
+# Provide the path to mafft
+export PATH=/programs/mafft/bin:$PATH
+
+# Change directories to provide the fasta file we made above
+cd data/03_Phylogenetic_Tree/
+pwd
+
+# Set a seed
+RANDOM=31415
+
+# Run Mafft
+# For now, use default options
+/programs/mafft/bin/mafft --auto preprocessed_ASVs.fasta > MAFFT_aligned_ASVs.fasta
+
+# change back to the project directory
+cd ../../
+pwd
+```
+
+# FastTree2
+
+```{r run-fasttree2, engine = 'bash', engine.opts = "-l"}
+# Write bash code to run fasttree2
+# Provide the path to fasttree2
+export PATH=/programs/FastTree-2.1.11:$PATH
+
+# Change directories to provide the fasta file we made above
+cd data/03_Phylogenetic_Tree/
+pwd
+
+# Run fasttree2
+# Parameters:
+  # -nt = indicates it's a nucleotide alignment
+  # -gtr = generalized time reversible substitution mode
+  # -fastest = speed up the model, reduce memory usage
+  # -log = output a log model
+  # input alignment file
+  # specify the output tree file
+
+FastTree -nt -gtr -log FastTree.log MAFFT_aligned_ASVs.fasta > ASVs_unrooted.tree
+
+# change back to the project directory
+cd ../../
+pwd
+```
+
+------------------------------------------------------
+
+# Session Information
+```{r session-info}
+devtools::session_info()
 ```
