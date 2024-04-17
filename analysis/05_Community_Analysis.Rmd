@@ -1,0 +1,119 @@
+---
+title: "Between Sample (Beta) Diversity of Microbes along a Salinity Gradient"
+output: 
+  html_document:
+    toc: yes
+    toc_float:
+      collapse: no
+      smooth_scroll: yes
+      toc_depth: 3
+    theme: "default"
+date: "`r Sys.Date()`"
+editor_options: 
+  chunk_output_type: console
+---
+---
+title: "Phyolgenetic Tree Inspection & Rooting"
+output: 
+  html_document:
+    toc: yes
+    toc_float:
+      collapse: no
+      smooth_scroll: yes
+      toc_depth: 3
+    theme: "default"
+date: "`r Sys.Date()`"
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, fig.align = "center", # Always relative to the document directory
+                      fig.path = "../figures/05_Community_Analysis") # Send any figures to this folder
+```
+
+## Goals
+
+1. Load in phyloseq data with rooted tree.
+2. Evaluate sequencing depth and remove sample.
+3. Normalize the read counts between samples.
+4. Calculate community dissimilarities. (Numbers between 0 and 1. If 0, completely similar versus if 1, completely dissimilar.)
+  a. *Sorensen*: Shared species as a binary value: Abundance-unweighted
+  b. *Bray-Curtis*: Shared abundant species: Abundance-weighted
+  c. *(Abundance) Weighted UNIFRAC*: Consider abundant species and where they fall on the tree
+5. Visualize the community data with two unconstrained Ordinations:
+  a. *PCoA*: Linear method, calculates eigenvalue = how much variation is explained by each axis. Choose to view axis 1, 2, 3, etc. and plot them together.
+  b. *NMDS*: Multiple dimensions into 2 or 3, need to report stress value (ideally <0.15)
+6. Run statistics with PERMANOVA and betadispR.
+
+# Setup
+
+## Set Seed
+
+```{r set-seed}
+set.seed(31415)
+```
+
+## Load Libraries
+```{r load-libraries}
+#install.packages("vegan")
+pacman::p_load(tidyverse, devtools, phyloseq, patchwork, vegan, install = FALSE)
+# Load station colors
+station_colors <- c(
+  "Shipping Channel" = "dodgerblue4",
+  "Aransas Bay" = "dodgerblue2",
+  "Copano West" = "#D9CC3C",
+  "Copano East" = "#A0E0BA",
+  "Mesquite Bay" = "#00ADA7")
+```
+
+## Load Data
+```{r load-data}
+# Load in rooted phylogenetic tree!
+load("data/03_Phylogenetic_Tree/phytree_preprocessed_physeq.RData")
+midroot_physeq_rm456
+unrooted_physeq_rm456
+```
+
+# Explore Read Counts
+```{r calc-seq-depth}
+# calculate the total number of reads per samplee
+raw_TotalSeqs_df <- 
+  midroot_physeq_rm456 %>%
+  # calculate the sample read sums
+  sample_sums() %>%
+  data.frame()
+# name the column
+colnames(raw_TotalSeqs_df)[1] <- "TotalSeqs"
+
+head(raw_TotalSeqs_df)
+
+# make histogram of raw reads
+raw_TotalSeqs_df %>%
+  ggplot(aes(x = TotalSeqs)) +
+  geom_histogram(bins = 50) +
+  scale_x_continuous(limits = c(0, 10000)) +
+  labs(title = "Raw Sequencing Depth Distribution") +
+  theme_classic()
+```
+
+## Normalize Read Counts
+
+# Calculate & Visualize (PCoA) Community Dissimilarity
+
+## Sorensen PCoA
+
+## Bray-Curtis PCoA
+
+## Weighted Unifrac PCoA
+
+## Bray-Curtis NMDS
+
+# Test for Statistical Significance
+
+---
+
+# Session Information
+```{r session-info}
+devtools::session_info()
+```
